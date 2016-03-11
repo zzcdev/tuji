@@ -30,8 +30,6 @@
 @property (nonatomic,strong)NSMutableArray *saveFilesList;
 
 
-@property (nonatomic,strong)NSString *testGit;
-
 
 /**
  *  右边栏弹出时加载的左边透明边栏，用于点击后右边栏回收事件
