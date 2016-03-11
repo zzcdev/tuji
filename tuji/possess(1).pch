@@ -1,0 +1,31 @@
+//
+//  Prefix header
+//
+//  The contents of this file are implicitly included at the beginning of every source file.
+//
+
+#import <Availability.h>
+
+#ifdef __OBJC__
+
+#import <UIKit/UIKit.h>
+#import <Foundation/Foundation.h>
+//#import "MSCFrameworkPreCompile.h"
+//#import "MSCLibraryPreCompile.h"
+//#import "CustomNavigationDefine.h"
+//#import "GlobalDefine.h"
+
+#ifdef DEBUG
+
+#define NSLog(FORMAT, ...) fprintf(stderr,"%s : %d\t%s\n",[[[NSString stringWithUTF8String:__FILE__] lastPathComponent] UTF8String], __LINE__, [[NSString stringWithFormat:FORMAT, ##__VA_ARGS__] UTF8String]);
+
+#else
+
+#define DLog(...)
+
+#endif
+
+//#import "BaiduMobStat.h" 
+
+
+#endif
