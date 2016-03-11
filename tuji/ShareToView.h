@@ -1,13 +1,12 @@
-//
-//  ShareToView.h
-//  tuji
-//
-//  Created by kaifa on 15/6/15.
-//  Copyright (c) 2015年 tuji. All rights reserved.
-//
 
 #import <UIKit/UIKit.h>
 
-@interface ShareToView : UIView
+@protocol shareToSNS <NSObject>
 
+-(void)shareToSNS:(NSInteger)name;
+
+@end
+
+@interface ShareToView : UIView
+@property (nonatomic,strong)id<shareToSNS> delegate;
 @end

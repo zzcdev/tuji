@@ -1,13 +1,11 @@
-//
-//  WebViewViewController.h
-//  tuji
-//
-//  Created by kaifa on 15/6/10.
-//  Copyright (c) 2015年 tuji. All rights reserved.
-//
 
 #import <UIKit/UIKit.h>
+#import "CustomWebView.h"
+#import "UserInfo.h"
+#import "UINavigationController+FDFullscreenPopGesture.h"
 
 @interface WebViewViewController : UIViewController
-
+@property (nonatomic)BOOL isLoginByQQ;
+@property (nonatomic,strong)UserInfo *userInfo;
+@property (nonatomic,strong)NSString *loadURL;
 @end

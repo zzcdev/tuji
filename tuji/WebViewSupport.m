@@ -7,6 +7,8 @@
 //
 
 #import "WebViewSupport.h"
+#import "SVProgressHUD.h"
+#import "UserLoginLogic.h"
 
 @implementation WebViewSupport
 

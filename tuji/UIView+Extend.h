@@ -15,8 +15,7 @@
 // all copies or substantial portions of the Software.
 // 
 
-#define SCREEN_WIDTH [UIScreen mainScreen].bounds.size.width
-#define SCREEN_HEIGHT [UIScreen mainScreen].bounds.size.height
+
 
 #import <Foundation/Foundation.h>
 #import <UIKit/UIKit.h>

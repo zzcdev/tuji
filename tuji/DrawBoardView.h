@@ -1,13 +1,15 @@
-//
-//  DrawBoardView.h
-//  tuji
-//
-//  Created by kaifa on 15/6/15.
-//  Copyright (c) 2015年 tuji. All rights reserved.
-//
 
 #import <UIKit/UIKit.h>
-
+#import "CustomWebViewProtocol.h"
 @interface DrawBoardView : UIView
 
+@property (nonatomic,strong)id <CustomWebViewProtocol>delegate;
+//初始化相关参数
+////unDo
+//-(void)backImage;
+//
+////reDo
+//-(void)forwardImage;
+
+-(void)saveClick;
 @end

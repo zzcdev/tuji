@@ -1,13 +1,15 @@
-//
-//  UserInfo.m
-//  tuji
-//
-//  Created by kaifa on 15/6/16.
-//  Copyright (c) 2015年 tuji. All rights reserved.
-//
 
 #import "UserInfo.h"
 
 @implementation UserInfo
 
++ (UserInfo *)sharedUserInfo
+{
+    static UserInfo *userInfoInstance = nil;
+    static dispatch_once_t predicate;
+    dispatch_once(&predicate, ^{
+        userInfoInstance = [[self alloc] init];
+    });
+    return userInfoInstance;
+}
 @end

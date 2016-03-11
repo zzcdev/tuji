@@ -1,13 +1,17 @@
-//
-//  Recorder.h
-//  tuji
-//
-//  Created by kaifa on 15/6/11.
-//  Copyright (c) 2015年 tuji. All rights reserved.
-//
 
 #import <Foundation/Foundation.h>
+#import "CustomWebViewProtocol.h"
 
 @interface Recorder : NSObject
 
+@property (nonatomic,strong)id <CustomWebViewProtocol>delegate;
+@property (nonatomic,strong)NSString *fileName;
+
+
+-(void)recorderStarSavePath;
+-(void)recorderStop;
+-(void)playRecorderWithUrl:(NSString *)url;
+-(void)recorderPause;
+-(void)recorderGoonPlaying;
+-(void)recorderStopPlaying;
 @end

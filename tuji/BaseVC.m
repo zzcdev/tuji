@@ -1,13 +1,6 @@
-//
-//  BaseVC.m
-//  systemScanQRCode
-//
-//  Created by 88 on 15/1/28.
-//  Copyright (c) 2015年 88. All rights reserved.
-//
 
-#define WIDTH self.view.bounds.size.width
-#define HEIGHT self.view.bounds.size.height
+#define WIDTH [UIScreen mainScreen].bounds.size.width
+#define HEIGHT [UIScreen mainScreen].bounds.size.height
 #define IPHONE5 self.view.bounds.size.width <= 375
 #define PURPLE [UIColor colorWithRed:163/255.0 green:138/255.0 blue:119/255.0 alpha:1]
 
@@ -15,8 +8,8 @@
 #import "BaseVC.h"
 #import <MobileCoreServices/MobileCoreServices.h>
 #import <CoreMotion/CoreMotion.h>
-#import "AuthorizeViewController.h"
-#import "XiutuViewController.h"
+#import "AuthorizeVC.h"
+#import "XiutuVC.h"
 @interface BaseVC ()<AVCaptureMetadataOutputObjectsDelegate,UINavigationControllerDelegate,UIImagePickerControllerDelegate>{
     AVCaptureDevice *captureDevice;
     
@@ -35,6 +28,9 @@
     UIButton* button1;
     UIButton* button2;
     
+    
+    AuthorizeVC* authorVC;
+    
     NSString* startTime;
     NSString* endTime;
 }
@@ -43,6 +39,8 @@
 @property (strong, nonatomic) AVCaptureMetadataOutput *captureMetadataOutput;
 @property (nonatomic, strong)AVCaptureStillImageOutput* stillImageOutput;
 @property (strong, nonatomic) UIView *viewPreview;//扫描窗口
+@property (nonatomic,strong)AVCaptureConnection * videoConnection;
+@property (nonatomic,strong)XiutuVC *xiutu;
 @end
 
 @implementation BaseVC
@@ -50,7 +48,14 @@
 
 -(void)viewWillAppear:(BOOL)animated{
     [super viewWillAppear:animated];
-    [[UIApplication sharedApplication]setStatusBarHidden:YES];
+    
+    //隐藏时间，信号，运营商
+    if ([self respondsToSelector:@selector(setNeedsStatusBarAppearanceUpdate)]) {
+        // iOS 7
+        [self prefersStatusBarHidden];
+        [self performSelector:@selector(setNeedsStatusBarAppearanceUpdate)];
+    }
+    
     self.navigationController.navigationBarHidden = YES;
     manager = [[CMMotionManager alloc]init];
     manager.accelerometerUpdateInterval = 1.0/60.0;
@@ -139,18 +144,15 @@
     //判断是否有数据，是否是二维码数据
     if (metadataObjects != nil && [metadataObjects count] > 0) {
         AVMetadataMachineReadableCodeObject *metadataObj = [metadataObjects objectAtIndex:0];
+        NSLog(@"二维码扫描到的结果：%@",metadataObj.stringValue);
         if ([[metadataObj type] isEqualToString:AVMetadataObjectTypeQRCode]) {
-            //获得扫描的数据，并结束扫描
-            [self performSelectorOnMainThread:@selector(stopReading:)withObject:metadataObj.stringValue waitUntilDone:NO];
-            //线程更新label的text值
-            //            [_result performSelectorOnMainThread:@selector(setText:) withObject:metadataObj.stringValue waitUntilDone:NO];
-            //block传值
-            //_stringValue(metadataObj.stringValue);
-            //代理传值
-            AuthorizeViewController* authorVC = [[AuthorizeViewController alloc]init];
-            authorVC.result = metadataObj.stringValue;
-            [self presentViewController:authorVC animated:YES completion:nil];
-            [_delegate setStringValue:metadataObj.stringValue];
+            if ([metadataObj.stringValue rangeOfString:@"8868b9888f3ee783e11128b2581a9849"].length) {
+                
+                authorVC = [[AuthorizeVC alloc]init];
+                authorVC.result = metadataObj.stringValue;
+                //获得扫描的数据，并结束扫描
+                [self performSelectorOnMainThread:@selector(stopReading:)withObject:metadataObj.stringValue waitUntilDone:YES];
+            }
         }
     }
 }
@@ -160,68 +162,55 @@
     _captureSession = nil;
     [_videoPreviewLayer removeFromSuperlayer];
     
-    [self dismissViewControllerAnimated:YES completion:nil];
+    [self.navigationController pushViewController:authorVC animated:YES];
 }
 
 
 -(void)initUI{
+    CGFloat btnBckViewHight = WIDTH/7;
+    
+    UIView *topBackGroundView = [[UIView alloc] initWithFrame:CGRectMake(0, 0, WIDTH, (HEIGHT-WIDTH-btnBckViewHight)/2)];
+    topBackGroundView.backgroundColor = [UIColor blackColor];
+    [self.view addSubview:topBackGroundView];
+    
+    UIView *bottomBackGroundView = [[UIView alloc] initWithFrame:CGRectMake(0, (HEIGHT-WIDTH-btnBckViewHight)/2+WIDTH, WIDTH, (HEIGHT-WIDTH-btnBckViewHight)/2)];
+    bottomBackGroundView.backgroundColor = [UIColor blackColor];
+    [self.view addSubview:bottomBackGroundView];
+    
     
     //背景栏
     
     if (IPHONE5) {
-        backgroundView = [[UIImageView alloc]initWithFrame:CGRectMake(0,HEIGHT-52 , WIDTH, 52)];
+        backgroundView = [[UIImageView alloc]initWithFrame:CGRectMake(0,HEIGHT-btnBckViewHight , WIDTH, btnBckViewHight)];
     }else{
-        backgroundView = [[UIImageView alloc]initWithFrame:CGRectMake(0,HEIGHT-67 , WIDTH, 67)];
+        backgroundView = [[UIImageView alloc]initWithFrame:CGRectMake(0,HEIGHT-btnBckViewHight , WIDTH, btnBckViewHight)];
     }
     
-    
-    //backgroundView.image = [UIImage imageWithContentsOfFile:[NSString stringWithFormat:@"%@/%@.png",[[NSBundle mainBundle] resourcePath],@"background"]];
+
     backgroundView.backgroundColor = [UIColor blackColor];
     backgroundView.userInteractionEnabled = YES;
     [self.view addSubview:backgroundView];
     //返回按钮
     UIButton *backBtn = [UIButton buttonWithType:UIButtonTypeCustom];
-    UIImage *backImage = [UIImage imageNamed:@"返回箭头.png"];
+    UIImage *backImage = [UIImage imageNamed:@"底栏-返回.png"];
     [backBtn setImage: backImage forState:UIControlStateNormal];
     [backBtn addTarget:self action:@selector(closeView) forControlEvents:UIControlEventTouchUpInside];
-    CGFloat h = backgroundView.bounds.size.height;
-    [backBtn setFrame:CGRectMake(20,0, h, h)];
-    
-    if (IPHONE5) {
-        backBtn.imageEdgeInsets = UIEdgeInsetsMake(h/2-7.17,5,h/2-7.17,h-12.1);
-    }else{
-        backBtn.imageEdgeInsets = UIEdgeInsetsMake(h/2-8.4,5,h/2-8.4,h-15.4);
-    }
-    [backgroundView addSubview:backBtn];
+    [backBtn setFrame:CGRectMake(WIDTH/7,HEIGHT-WIDTH/7, WIDTH/7, WIDTH/7)];
+    [self.view addSubview:backBtn];
     //拍照按钮
-    UIImage *camerImage = [UIImage imageNamed:@"拍照-相机.png"];
+    UIImage *camerImage = [UIImage imageNamed:@"底栏-相机.png"];
     UIButton *cameraBtn = [[UIButton alloc] initWithFrame:
-                           CGRectMake(WIDTH/2-h/2,0, h, h)];
-    cameraBtn.imageEdgeInsets = UIEdgeInsetsMake(h/2-20, 0, h/2-20, h-40);
-    if (IPHONE5) {
-        cameraBtn.imageEdgeInsets = UIEdgeInsetsMake(h/2-14.57, 0, h/2-14.57, h-29.14);
-    }else{
-        cameraBtn.imageEdgeInsets = UIEdgeInsetsMake(h/2-17.05, 0, h/2-17.05, h-34.1);
-    }
-
-    
+                           CGRectMake(WIDTH/7*3,HEIGHT-WIDTH/7, WIDTH/7, WIDTH/7)];
     [cameraBtn setImage:camerImage forState:UIControlStateNormal];
     [cameraBtn addTarget:self action:@selector(shutterCamera) forControlEvents:UIControlEventTouchUpInside];
-//    UILongPressGestureRecognizer* longPress = [[UILongPressGestureRecognizer alloc]initWithTarget:self action:@selector(lianbihua:)];
-//    longPress.minimumPressDuration = 0.5;
-//    [cameraBtn addGestureRecognizer:longPress];
-    [backgroundView addSubview:cameraBtn];
+    [self.view addSubview:cameraBtn];
     //相册
-    UIImage *photoImage = [UIImage imageNamed:@"图片-扇形.png"];
-    UIButton *photoBtn = [[UIButton alloc] initWithFrame:CGRectMake(WIDTH-20-h,0, h, h)];
-    if(IPHONE5){
-        photoBtn.imageEdgeInsets = UIEdgeInsetsMake(h/2-7.16,h-17.38,h/2-7.16,0);
-    }else{
-        photoBtn.imageEdgeInsets = UIEdgeInsetsMake(h/2-8.395,h-20.37,h/2-8.395,0);
-    }
+    UIImage *photoImage = [UIImage imageNamed:@"底栏-本地相册.png"];
+    UIButton *photoBtn = [[UIButton alloc] initWithFrame:CGRectMake(WIDTH/7*5,HEIGHT-WIDTH/7, WIDTH/7, WIDTH/7)];
+
     [photoBtn setImage:photoImage forState:UIControlStateNormal];
     [photoBtn addTarget:self action:@selector(takeAlbum) forControlEvents:UIControlEventTouchUpInside];
-    [backgroundView addSubview:photoBtn];
+    [self.view addSubview:photoBtn];
     
     
     //闪光灯图片
@@ -232,40 +221,67 @@
     //闪光灯按钮
     button0 = [UIButton buttonWithType:UIButtonTypeSystem];
     button0.frame = CGRectMake(33, 20, 30, 30);
-    //[blingBtn setBackgroundImage:[UIImage imageNamed:@"剪刀.png"] forState:UIControlStateNormal];
     [button0 addTarget:self action:@selector(setBling:) forControlEvents:UIControlEventTouchUpInside];
     [button0 setTitle:@"自动" forState:UIControlStateNormal];
     [button0 setTitleColor:PURPLE forState:UIControlStateNormal];
     [self.view addSubview:button0];
     
+//    [self autoF];
     
 }
+
 //取消
 -(void)closeView{
     [self.navigationController popViewControllerAnimated:YES];
 }
+
 //拍照
 - (void)shutterCamera
 {
-    AVCaptureConnection * videoConnection = [_stillImageOutput connectionWithMediaType:AVMediaTypeVideo];
-    if (!videoConnection) {
+    self.videoConnection = [_stillImageOutput connectionWithMediaType:AVMediaTypeVideo];
+    if (!self.videoConnection) {
         NSLog(@"take photo failed!");
         return;
     }
-    [_stillImageOutput captureStillImageAsynchronouslyFromConnection:videoConnection completionHandler:^(CMSampleBufferRef imageDataSampleBuffer, NSError *error) {
+    [_stillImageOutput captureStillImageAsynchronouslyFromConnection:self.videoConnection completionHandler:^(CMSampleBufferRef imageDataSampleBuffer, NSError *error) {
         if (imageDataSampleBuffer == NULL) {
             return;
         }
+        
+        NSData * imageData = [AVCaptureStillImageOutput jpegStillImageNSDataRepresentation:imageDataSampleBuffer];
+        UIImage* image = [UIImage imageWithData:imageData];
+        NSLog(@"1baseVCimage:%ld,,,imageOrientation%ld",(long)image.imageOrientation,(long)imageOrientation);
+        
+        
+        
+        
         [manager stopAccelerometerUpdates];
         [myTimer invalidate];
-        
-        XiutuViewController* xtVC = [[XiutuViewController alloc]init];
-        [self.navigationController pushViewController:xtVC animated:YES];
-       // [self presentViewController:xtVC animated:YES completion:nil];
 
+
+        self.xiutu = [[XiutuVC alloc] init];
+        image = [self.xiutu splitImage:image];
+//        image = [xiutu scaleImage:image toScale:.5];
+        [self setCaptureMetadataOutput:nil];
+        [self setCaptureSession:nil];
+        [self setVideoPreviewLayer:nil];
+        [self setStillImageOutput:nil];
+        [self setViewPreview:nil];
+        [self setVideoConnection:nil];
+        [self setXiutu:nil];
+        imageData = nil;
+        [self.delegate saveImage:image byType:1];
+        
+        image = nil;
+        NSLog(@"2baseVCimage.imageOrientation:%ld",(long)image.imageOrientation);
+        [self.navigationController popViewControllerAnimated:YES];
     }];
-   
-    
+}
+
+
+-(void)viewDidDisappear:(BOOL)animated
+{
+    [super viewDidDisappear:animated];
 }
 //打开相册
 -(void)takeAlbum{
@@ -289,14 +305,10 @@
     UIImage* image;
         if ([info objectForKey:UIImagePickerControllerOriginalImage]) {
             image = [info objectForKey:UIImagePickerControllerOriginalImage];
-
         }
+    [self.navigationController popViewControllerAnimated:YES];
         [picker dismissViewControllerAnimated:YES completion:^{
-            XiutuViewController* xtVC = [[XiutuViewController alloc]init];
-            [self.navigationController pushViewController:xtVC animated:YES];
-            
-          //  [self presentViewController:xtVC animated:YES completion:^{
-          //  }];
+            [self.delegate saveImage:image byType:1];
         }];
    
 }
@@ -356,25 +368,24 @@
     
 }
 
+/**
+ *  开启闪光灯
+ */
 -(void)open{
     AVCaptureDevice* d = nil;
     
-    // find a device by position
     NSArray* allDevices = [AVCaptureDevice devices];
     for (AVCaptureDevice* currentDevice in allDevices) {
         if (currentDevice.position == AVCaptureDevicePositionBack) {
             d = currentDevice;
         }
     }
-    // at this point, d may still be nil, assuming we found something we like....
     
     NSError* err = nil;
     BOOL lockAcquired = [d lockForConfiguration:&err];
     
     if (!lockAcquired) {
-        // log err and handle...
     } else {
-        // flip on the flash mode
         if ([d hasFlash] && [d isFlashModeSupported:AVCaptureFlashModeOn] ) {
             [d setFlashMode:AVCaptureFlashModeOn];
         }
@@ -382,25 +393,25 @@
         [d unlockForConfiguration];
     }
 }
+
+/**
+ *  关闭闪光灯
+ */
 -(void)close{
     AVCaptureDevice* d = nil;
     
-    // find a device by position
     NSArray* allDevices = [AVCaptureDevice devices];
     for (AVCaptureDevice* currentDevice in allDevices) {
         if (currentDevice.position == AVCaptureDevicePositionBack) {
             d = currentDevice;
         }
     }
-    // at this point, d may still be nil, assuming we found something we like....
     
     NSError* err = nil;
     BOOL lockAcquired = [d lockForConfiguration:&err];
     
     if (!lockAcquired) {
-        // log err and handle...
     } else {
-        // flip on the flash mode
         if ([d hasFlash] && [d isFlashModeSupported:AVCaptureFlashModeOff] ) {
             [d setFlashMode:AVCaptureFlashModeOff];
         }
@@ -408,40 +419,34 @@
         [d unlockForConfiguration];
     }
 }
+
+/**
+ *  自动闪光灯
+ */
 -(void)autoF{
     AVCaptureDevice* d = nil;
     
-    // find a device by position
     NSArray* allDevices = [AVCaptureDevice devices];
     for (AVCaptureDevice* currentDevice in allDevices) {
         if (currentDevice.position == AVCaptureDevicePositionBack) {
             d = currentDevice;
         }
     }
-    // at this point, d may still be nil, assuming we found something we like....
     
     NSError* err = nil;
     BOOL lockAcquired = [d lockForConfiguration:&err];
     
     if (!lockAcquired) {
-        // log err and handle...
     } else {
-        // flip on the flash mode
         if ([d hasFlash] && [d isFlashModeSupported:AVCaptureFlashModeAuto] ) {
             [d setFlashMode:AVCaptureFlashModeAuto];
         }
-        
         [d unlockForConfiguration];
     }
-
-}
-- (void)didReceiveMemoryWarning {
-    [super didReceiveMemoryWarning];
-    // Dispose of any resources that can be recreated.
-}
--(void)viewWillDisappear:(BOOL)animated{
-    [super viewWillDisappear:animated];
-    
 }
 
+- (BOOL)prefersStatusBarHidden
+{
+    return YES;//隐藏为YES，显示为NO
+}
 @end
